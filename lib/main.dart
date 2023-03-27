@@ -40,6 +40,7 @@ class HomePage extends StatelessWidget {
 
              default:
               return const Text('Loading...');
+              break;
 
         };
           }
