@@ -1,5 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'dart:developer' as devtools show log;
+
+import 'package:mynotes/constants/routes.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({Key? key}) : super(key: key);
@@ -55,30 +58,62 @@ class _LoginViewState extends State<LoginView> {
               final email = _email.text;
               final password = _password.text;
               try {
-                final userCridential = await FirebaseAuth.instance
-                    .signInWithEmailAndPassword(email: email, password: password);
-                print(userCridential);
+                await FirebaseAuth.instance
+                    .signInWithEmailAndPassword(
+                        email: email,
+                        password: password);
+                final user = FirebaseAuth.instance.currentUser;
+                if (user?.emailVerified ?? false) {
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                  notesRoute, 
+                  (route) => false);
+                } else {
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                  verifyEmailRout, 
+                  (route) => false);
+                }
+                
               } on FirebaseAuthException catch (e) {
                 if (e.code == 'user-not-found') {
-                  print('User not found');
+                  await showErrorDiaglog(context, 'User not found',);
                 }
                 if (e.code == 'wrong-password') {
-                  print('Wrong');
+                  await showErrorDiaglog(context, 'Wrong password',);
+                } else {
+                  await showErrorDiaglog(context, 'Error: ${e.code}',);
                 }
               }
             },
             child: const Text('Login'),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                '/register/',
-                 (route) => false,
-                 );
-            },
-             child: Text('Not register yet? Register'))
+              onPressed: () {
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  registerRoute,
+                  (route) => false,
+                );
+              },
+              child: Text('Not register yet? Register'))
         ],
       ),
     );
   }
+
 }
+
+Future<void> showErrorDiaglog (BuildContext context, String text,) {
+
+    return showDialog(context: context, builder: (context) {
+      return AlertDialog(
+        title: const Text('An error occured'),
+        content: Text(text),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            }, 
+            child: const Text('OK'))
+        ],
+      );
+    });
+  }

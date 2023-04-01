@@ -1,13 +1,17 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:mynotes/constants/routes.dart';
+import 'package:mynotes/utilities/show_error_dialog.dart';
 import 'package:mynotes/view/login_view.dart';
 import 'package:mynotes/view/register_view.dart';
 import 'package:mynotes/view/verify_email_view.dart';
 import 'firebase_options.dart';
+import 'dart:developer' as devtools show log;
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized;
+
   runApp(
     MaterialApp(
       title: 'Flutter Demo',
@@ -16,9 +20,11 @@ void main() {
       ),
       home: const HomePage(),
       routes: {
-        '/login/': (context) => const LoginView(),
-        '/register/': (context) => const RegisterView(),
-
+        loginRoute: (context) => const LoginView(),
+        registerRoute
+        : (context) => const RegisterView(),
+        notesRoute: (context) => const NotesView(),
+        verifyEmailRout: (context) => const VerifyEmailView(),
       },
     ),
   );
@@ -38,15 +44,15 @@ class HomePage extends StatelessWidget {
             case ConnectionState.done:
               final user = FirebaseAuth.instance.currentUser;
               if (user != null) {
+                print(user.emailVerified);
                 if (user.emailVerified) {
-                  print('Email is verified');
+                  return const NotesView();
                 } else {
                   return const VerifyEmailView();
                 }
               } else {
                   return const LoginView();
               }
-              return const Text('Done');
               
             default:
               return const CircularProgressIndicator();
@@ -54,5 +60,51 @@ class HomePage extends StatelessWidget {
         };
           }
       );
+  }
+}
+
+enum MenuAction { logout }
+
+class NotesView extends StatefulWidget {
+  const NotesView({super.key});
+
+  @override
+  State<NotesView> createState() => _NotesViewState();
+}
+
+class _NotesViewState extends State<NotesView> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('MAIN UI:'),
+        actions: [
+          PopupMenuButton<MenuAction>( onSelected: (value) async {
+            switch(value) {
+              
+              case MenuAction.logout:
+                final shoudLogout = await showLogOutDialog(context);
+                if (shoudLogout) {
+                  FirebaseAuth.instance.signOut();
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                    loginRoute, 
+                    (_) => false
+                    );
+                }
+                break;
+            }
+          }, itemBuilder: (context) {
+            return [
+              const PopupMenuItem<MenuAction>( 
+                value: MenuAction.logout, 
+                child: Text('Log out') 
+                ),
+                ];
+            
+          },)
+        ]
+      ),
+      body: const Text('Hello WORLD!')
+    );
   }
 }

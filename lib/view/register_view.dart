@@ -2,6 +2,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:mynotes/constants/routes.dart';
+import 'package:mynotes/view/login_view.dart';
+import 'dart:developer' as devtools show log;
+
 
 import '../firebase_options.dart';
 
@@ -59,25 +63,32 @@ class _RegisterViewState extends State<RegisterView> {
               final email = _email.text;
               final password = _password.text;
               try {
-                final userCridential = await FirebaseAuth.instance
+                await FirebaseAuth.instance
                     .createUserWithEmailAndPassword(
                         email: email, password: password);
-              } on FirebaseAuthException catch (e) {
+                final user = FirebaseAuth.instance.currentUser;
+                user?.sendEmailVerification();
+                Navigator.of(context).pushNamed(verifyEmailRout);
+                } on FirebaseAuthException catch (e) {
                 if (e.code == 'weak-password') {
-                  print('Weak password');
+                  await showErrorDiaglog(context, 'Weak password!');
                 } else if (e.code == 'email-already-in-use') {
-                  print('Email already in use');
+                  await showErrorDiaglog(context, 'Email is already in use');
                 } else if (e.code == 'invalid-email') {
-                  print('Invalid email');
+                  await showErrorDiaglog(context, 'Invalid email address!');
+                } else {
+                  await showErrorDiaglog(context, 'Error: ${e.code}');
                 }
+              } catch (e) {
+                await showErrorDiaglog(context, e.toString());
               }
-            },
+            }, 
             child: const Text('Register'),
           ),
           TextButton(
           onPressed: () {
             Navigator.of(context).pushNamedAndRemoveUntil(
-              '/login/',
+              loginRoute,
                (route) => false,
                );
           },
